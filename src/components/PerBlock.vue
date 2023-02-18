@@ -224,13 +224,6 @@ onMounted(() => {
 
 <template>
   <div>
-    <div>
-      <v-row>
-        <v-col>
-          <v-card-title class="card-title"> Stats per Block </v-card-title>
-        </v-col>
-      </v-row>
-    </div>
     <h1>Emissions</h1>
     <div><Line :data="dataEmissions" :options="options" /></div>
     <h1>GasLimit</h1>
