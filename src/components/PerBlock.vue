@@ -67,27 +67,29 @@ const getBlockDetails = async (blockNumber) => {
   let txDetailsPromises = [];
   for (const transaction of transactions) {
     const txDetails = getTxDetails(transaction);
-    if (txDetails.type === 2) {
-      txDetailsPromises.push(txDetails);
-    }
+    txDetailsPromises.push(txDetails);
   }
   const allTransactionDetails = await Promise.all(txDetailsPromises);
   for (const txDetail of allTransactionDetails) {
-    if (
-      txDetail.maxFeePerGas.sub(baseFeePerGas).gt(txDetail.maxPriorityFeePerGas)
-    ) {
-      priorityFee = priorityFee.add(
-        txDetail.maxPriorityFeePerGas.mul(txDetail.gasUsed)
-      );
-    } else {
-      priorityFee = priorityFee.add(
-        txDetail.maxFeePerGas.sub(baseFeePerGas).mul(txDetail.gasUsed)
+    if (txDetail.type === 2) {
+      if (
+        txDetail.maxFeePerGas
+          .sub(baseFeePerGas)
+          .gt(txDetail.maxPriorityFeePerGas)
+      ) {
+        priorityFee = priorityFee.add(
+          txDetail.maxPriorityFeePerGas.mul(txDetail.gasUsed)
+        );
+      } else {
+        priorityFee = priorityFee.add(
+          txDetail.maxFeePerGas.sub(baseFeePerGas).mul(txDetail.gasUsed)
+        );
+      }
+
+      burnedInThisBlock = burnedInThisBlock.add(
+        baseFeePerGas.mul(txDetail.gasUsed)
       );
     }
-
-    burnedInThisBlock = burnedInThisBlock.add(
-      baseFeePerGas.mul(txDetail.gasUsed)
-    );
   }
 
   blockLabels.push(blockNumber);
