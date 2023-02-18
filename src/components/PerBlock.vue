@@ -63,6 +63,7 @@ const getBlockDetails = async (blockNumber) => {
     .size;
   const transactions = block.transactions;
   const baseFeePerGas = block.baseFeePerGas;
+  const gasLimit = block.gasLimit;
   let txDetailsPromises = [];
   for (const transaction of transactions) {
     const txDetails = getTxDetails(transaction);
@@ -95,6 +96,7 @@ const getBlockDetails = async (blockNumber) => {
   );
   blockDataPriorityFee.push(ethers.utils.formatEther(priorityFee));
   blockDataSize.push(ethers.utils.formatUnits(size, 0));
+  blockGasLimit.push(ethers.utils.formatUnits(gasLimit, 0));
 
   // functions that mutate state and trigger updates
   dataEmissions.value = {
@@ -132,6 +134,18 @@ const getBlockDetails = async (blockNumber) => {
       },
     ],
   };
+
+  dataGasLimit.value = {
+    labels: blockLabels,
+    datasets: [
+      {
+        label: 'Size',
+        backgroundColor: '#f87979',
+        data: blockGasLimit,
+        borderColor: 'rgb(200, 50, 192)',
+      },
+    ],
+  };
 };
 
 // reactive state
@@ -152,6 +166,14 @@ const dataPriorityFee = ref({
 });
 
 const dataSize = ref({
+  datasets: [
+    {
+      data: [0],
+    },
+  ],
+});
+
+const dataGasLimit = ref({
   datasets: [
     {
       data: [0],
@@ -190,6 +212,7 @@ let blockLabels = [];
 let blockDataEmissions = [];
 let blockDataPriorityFee = [];
 let blockDataSize = [];
+let blockGasLimit = [];
 
 // lifecycle hooks
 onMounted(() => {
@@ -208,6 +231,8 @@ onMounted(() => {
     </div>
     <h1>Emissions</h1>
     <div><Line :data="dataEmissions" :options="options" /></div>
+    <h1>GasLimit</h1>
+    <div><Line :data="dataGasLimit" :options="options" /></div>
     <h1>Priority Fee</h1>
     <div><Line :data="dataPriorityFee" :options="options" /></div>
     <h1>Size (bytes)</h1>
