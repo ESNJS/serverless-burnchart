@@ -92,6 +92,13 @@ const getBlockDetails = async (blockNumber) => {
     }
   }
 
+  if (blockLabels.length >= 100) {
+    blockLabels.shift();
+    blockDataEmissions.shift();
+    blockDataSize.shift();
+    blockGasLimit.shift();
+  }
+
   blockLabels.push(blockNumber);
   blockDataEmissions.push(
     BLOCK_REWARD - ethers.utils.formatEther(burnedInThisBlock)
@@ -144,7 +151,7 @@ const getBlockDetails = async (blockNumber) => {
         label: 'Size',
         backgroundColor: '#f87979',
         data: blockGasLimit,
-        borderColor: 'rgb(200, 50, 192)',
+        borderColor: 'rgb(200, 200, 0)',
       },
     ],
   };
