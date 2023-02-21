@@ -26,6 +26,7 @@ const provider = new ethers.providers.JsonRpcProvider(
   'https://testnet-rpc.callisto.network/'
 );
 const BLOCK_REWARD = 77.76;
+const MAX_BLOCKS = 250;
 
 const getTxDetails = (txHash) => {
   return new Promise(async (resolve, reject) => {
@@ -92,7 +93,7 @@ const getBlockDetails = async (blockNumber) => {
     }
   }
 
-  if (blockLabels.length >= 100) {
+  if (blockLabels.length >= MAX_BLOCKS) {
     blockLabels.shift();
     blockDataEmissions.shift();
     blockDataSize.shift();
@@ -223,6 +224,62 @@ let blockDataPriorityFee = [];
 let blockDataSize = [];
 let blockGasLimit = [];
 
+const liveData = ref(true);
+const startBlock = ref(null);
+const endBlock = ref(null);
+
+const turnOnPeriodData = async () => {
+  blockLabels = [];
+  blockDataEmissions = [];
+  blockDataPriorityFee = [];
+  blockDataSize = [];
+  blockGasLimit = [];
+
+  endBlock.value = startBlock.value * 1 + MAX_BLOCKS;
+
+  const currentBlock = await provider.getBlockNumber();
+
+  if (endBlock.value > currentBlock) {
+    endBlock.value = currentBlock;
+    startBlock.value = endBlock.value * 1 - MAX_BLOCKS;
+  }
+
+  endBlock.value = startBlock.value * 1 + MAX_BLOCKS;
+  startBlock.value = endBlock.value * 1 - MAX_BLOCKS;
+
+  if (startBlock.value < 0) {
+    startBlock.value = 0;
+  }
+
+  provider.off('block');
+  liveData.value = false;
+};
+
+const inputDisable = ref(false);
+
+const triggerPeriodData = async () => {
+  inputDisable.value = true;
+  if (endBlock.value != null && startBlock.value != null) {
+    for (let index = startBlock.value; index < endBlock.value; index++) {
+      await getBlockDetails(index);
+    }
+  }
+  inputDisable.value = false;
+};
+
+const turnOnLiveData = () => {
+  if (!liveData.value) {
+    startBlock.value = endBlock.value = null;
+    liveData.value = true;
+    blockLabels = [];
+    blockDataEmissions = [];
+    blockDataPriorityFee = [];
+    blockDataSize = [];
+    blockGasLimit = [];
+    provider.on('block', (blockNumber) => getBlockDetails(blockNumber));
+  }
+};
+
 // lifecycle hooks
 onMounted(() => {
   provider.on('block', (blockNumber) => getBlockDetails(blockNumber));
@@ -231,6 +288,41 @@ onMounted(() => {
 
 <template>
   <div>
+    <div>
+      <v-row>
+        <v-col>
+          <v-text-field
+            class="block-input"
+            label="Start Block Number"
+            compact
+            v-model="startBlock"
+            :disabled="inputDisable"
+          >
+          </v-text-field>
+        </v-col>
+        <v-col>
+          <v-text-field
+            class="block-input"
+            label="End Block Number"
+            compact
+            v-model="endBlock"
+            @focus="turnOnPeriodData"
+            @blur="triggerPeriodData"
+            :disabled="inputDisable"
+          ></v-text-field>
+        </v-col>
+        <v-col>
+          <v-btn
+            class="live-data"
+            :color="liveData ? 'green' : 'red'"
+            @click="turnOnLiveData"
+            :disabled="inputDisable"
+          >
+            Live Data
+          </v-btn>
+        </v-col>
+      </v-row>
+    </div>
     <h1>Emissions</h1>
     <div><Line :data="dataEmissions" :options="options" /></div>
     <h1>GasLimit</h1>
@@ -241,3 +333,20 @@ onMounted(() => {
     <div><Line :data="dataSize" :options="options" /></div>
   </div>
 </template>
+
+<style>
+.block-input {
+  color: white;
+  width: 100%;
+  height: 100%;
+}
+
+.live-data {
+  width: 100%;
+  height: 100% !important;
+}
+
+.v-input__details {
+  display: none !important;
+}
+</style>
